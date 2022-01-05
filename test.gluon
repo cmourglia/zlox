@@ -1,0 +1,12 @@
+// Supporting any number of parameters (print("toto", "tata", "titi", "tutu"))
+// will require proper function calls.
+// That will be supported later
+print("HEY" + " " + "AU FAIT ! " + "." * 3 + " TEST " + "!" * 42);
+
+// At some point, I promise we will also handle string interpolation
+// print("The first value after 0 is {1}, and the answer is {answer}");
+print(1 + 2);
+print(3 + 4);
+
+// Test
+1 + 2;
