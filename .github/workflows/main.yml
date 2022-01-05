@@ -12,20 +12,20 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-      runs-on: ${{ matrix.os }}
-      steps:
-        - uses: actions/checkout@v2
-          with:
-            submodules: true
-          uses: goto-bus-stop/setup-zig@v1
-          with:
-            version: master
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
 
-          run: zig version
-          run: zig env
+      - run: zig version
+      - run: zig env
 
-        - name: Build
-          run: zig build
+      - name: Build
+        run: zig build
 
         # Nothing to do here right now
         # - name: Run tests
