@@ -1,4 +1,4 @@
-![CI](https://github.com/cmourglia/gluon/actions/workflows/CI/badge.svg)
+![CI](https://github.com/cmourglia/gluon/workflows/CI/badge.svg)
 
 # Gluon
 
