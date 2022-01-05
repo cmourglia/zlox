@@ -1,3 +1,5 @@
+![CI](https://github.com/cmourglia/gluon/actions/workflows/CI/badge.svg)
+
 # Gluon
 
 Gluon is an attempt to address an issue with application development where software are usually bloated and very inefficient (look how quickly your mail or calendar application gets rid of your battery when using it) and managers do not allow people to take performance into account, because "it's expensive".
