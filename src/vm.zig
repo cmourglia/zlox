@@ -63,17 +63,26 @@ pub const VM = struct {
     }
 
     pub fn interpret(self: *Self, buf: []const u8) InterpreterError!void {
+        const t0 = std.time.nanoTimestamp();
         var chunk = bytecode.Chunk.init(self.allocator);
         defer chunk.deinit();
 
         if (!compiler.compile(buf, &chunk, &self.heap)) {
             return InterpreterError.CompileError;
         }
+        const t1 = std.time.nanoTimestamp();
 
         self.chunk = &chunk;
         self.ip = 0;
 
+        const t2 = std.time.nanoTimestamp();
         try self.run();
+        const t3 = std.time.nanoTimestamp();
+
+        const t_compile_ms = @intToFloat(f64, t1 - t0) * 1e-6;
+        const t_execute_ms = @intToFloat(f64, t3 - t2) * 1e-6;
+
+        std.debug.print("Compilation took {d}ms, execution took {d}ms\n", .{ t_compile_ms, t_execute_ms });
     }
 
     fn run(self: *Self) InterpreterError!void {
