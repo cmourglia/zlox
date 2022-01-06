@@ -20,7 +20,7 @@ pub fn main() !void {
     var args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
     if (args.len == 1) {
-        try runFile(alloc, vm, "./test.bozon");
+        try runFile(alloc, vm, "./test.gluon");
     } else {
         try runFile(alloc, vm, args[1]);
     }
