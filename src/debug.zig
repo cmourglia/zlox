@@ -20,6 +20,9 @@ pub fn disassembleInst(chunk: bytecode.Chunk, offset: usize) usize {
 
     switch (@intToEnum(bytecode.Op, chunk.code.items[offset])) {
         .Constant => return constantInst("OP_CONSTANT", chunk, offset),
+        .DefineGlobal => return constantInst("OP_DEFINE_GLOBAL", chunk, offset),
+        .GetGlobal => return constantInst("OP_GET_GLOBAL", chunk, offset),
+        .SetGlobal => return constantInst("OP_SET_GLOBAL", chunk, offset),
         .Return => return simpleInst("OP_RETURN", offset),
         .True => return simpleInst("OP_TRUE", offset),
         .False => return simpleInst("OP_FALSE", offset),

@@ -24,6 +24,7 @@ pub const InterpreterError = error{
     StackOverflowError,
     StackUnderflowError,
     InvalidOperationError,
+    UndefinedVariableError,
 };
 
 var the_vm: VM = undefined;
@@ -45,6 +46,8 @@ pub const VM = struct {
     root_list: std.ArrayList(*const Value),
     running: bool = false,
 
+    globals: std.StringHashMap(Value),
+
     const Self = @This();
     pub fn init(allocator: std.mem.Allocator) *Self {
         the_vm = VM{
@@ -52,11 +55,13 @@ pub const VM = struct {
             .stack = std.ArrayList(Value).init(allocator),
             .heap = Heap.init(allocator),
             .root_list = std.ArrayList(*const Value).init(allocator),
+            .globals = std.StringHashMap(Value).init(allocator),
         };
         return vm();
     }
 
     pub fn deinit(self: *Self) void {
+        self.globals.deinit();
         self.root_list.deinit();
         self.heap.deinit();
         self.stack.deinit();
@@ -101,9 +106,7 @@ pub const VM = struct {
                     break;
                 },
                 .Constant => {
-                    // TODO: Get value
-                    const value = self.chunk.getConstant(self.ip + 1);
-                    self.ip += 2;
+                    const value = self.getNextConstant();
                     self.push(value);
                 },
                 .True => self.push(Value.fromBoolean(true)),
@@ -135,8 +138,41 @@ pub const VM = struct {
                     std.debug.print("{}\n", .{value});
                 },
                 .Pop => _ = self.pop(),
+                .DefineGlobal => {
+                    const name = try self.getNextConstant().asString();
+                    self.globals.put(name.str(), self.pop()) catch unreachable;
+                },
+                .GetGlobal => {
+                    const name = try self.getNextConstant().asString();
+                    const value = self.globals.get(name.str());
+                    if (value == null) {
+                        return InterpreterError.UndefinedVariableError;
+                    }
+                    self.push(value.?);
+                },
+                .SetGlobal => {
+                    const name = try self.getNextConstant().asString();
+                    const value = self.globals.getPtr(name.str());
+                    if (value == null) {
+                        return InterpreterError.UndefinedVariableError;
+                    }
+
+                    const new_value = self.peek(0);
+
+                    if (!value.?.sharesType(new_value)) {
+                        return InterpreterError.CastError;
+                    }
+
+                    value.?.* = new_value;
+                },
             }
         }
+    }
+
+    fn getNextConstant(self: *Self) Value {
+        const value = self.chunk.getConstant(self.ip + 1);
+        self.ip += 2;
+        return value;
     }
 
     fn pushReplace(self: *Self, value: Value) void {

@@ -28,7 +28,7 @@ const Precedence = enum(usize) {
     Primary,
 };
 
-const ParseFn = fn (parser: *Parser) void;
+const ParseFn = fn (parser: *Parser, can_assign: bool) void;
 
 const ParseRule = struct {
     prefix: ?ParseFn,
@@ -88,7 +88,7 @@ const parse_rules = t: {
     prec.set(.And, ParseRule.init(null, Parser.compileBinary, .And));
     prec.set(.Xor, ParseRule.init(null, Parser.compileBinary, .Xor));
 
-    prec.set(.Identifier, ParseRule.init(null, null, .None));
+    prec.set(.Identifier, ParseRule.init(Parser.compileVariable, null, .None));
     prec.set(.Class, ParseRule.init(null, null, .None));
     prec.set(.Else, ParseRule.init(null, null, .None));
     prec.set(.For, ParseRule.init(null, null, .None));
@@ -165,7 +165,8 @@ const Parser = struct {
             return;
         }
 
-        prefix_rule.?(self);
+        const can_assign = @enumToInt(precedence) <= @enumToInt(Precedence.Assignment);
+        prefix_rule.?(self, can_assign);
 
         const prec_value = @enumToInt(precedence);
         while (prec_value <= @enumToInt(parse_rules.get(self.current.token_type).precedence)) {
@@ -173,8 +174,12 @@ const Parser = struct {
             const infix_rule = parse_rules.get(self.previous.token_type).infix;
 
             if (infix_rule != null) {
-                infix_rule.?(self);
+                infix_rule.?(self, can_assign);
             }
+        }
+
+        if (can_assign and self.match(.Equal)) {
+            self.errorAtPrevious("Invalid assignment target");
         }
     }
 
@@ -191,7 +196,15 @@ const Parser = struct {
     }
 
     fn compileVarDecl(self: *Self) void {
-        _ = self;
+        self.consume(.Identifier, "Variable name expected.");
+        var name_token = self.previous;
+
+        self.consume(.Equal, "Variables must be affected when declared");
+        self.compileExpression();
+        self.consume(.Semicolon, "Expect ';' after variable declaration");
+
+        self.emitOp(.DefineGlobal);
+        self.emitIdentifierConstant(name_token);
     }
 
     fn compileStatement(self: *Self) void {
@@ -222,19 +235,19 @@ const Parser = struct {
         self.parsePrecedence(.Assignment);
     }
 
-    fn compileNumber(self: *Self) void {
+    fn compileNumber(self: *Self, _: bool) void {
         const value = std.fmt.parseFloat(f64, self.previous.lexeme) catch std.math.nan_f64;
         self.emitConstant(Value.fromNumber(value));
     }
 
-    fn compileString(self: *Self) void {
+    fn compileString(self: *Self, _: bool) void {
         const source_str = self.previous.lexeme;
         const str = value_api.makeConstantString(source_str);
 
         self.emitConstant(Value.fromString(str));
     }
 
-    fn compileLiteral(self: *Self) void {
+    fn compileLiteral(self: *Self, _: bool) void {
         switch (self.previous.token_type) {
             .True => self.chunk.push(.True),
             .False => self.chunk.push(.False),
@@ -243,12 +256,12 @@ const Parser = struct {
         }
     }
 
-    fn compileGrouping(self: *Self) void {
+    fn compileGrouping(self: *Self, _: bool) void {
         self.compileExpression();
         self.consume(TokenType.CloseParen, "Expect `)` after an expression.");
     }
 
-    fn compileUnary(self: *Self) void {
+    fn compileUnary(self: *Self, _: bool) void {
         const operator_type = self.previous.token_type;
 
         self.parsePrecedence(.Unary);
@@ -260,7 +273,7 @@ const Parser = struct {
         }
     }
 
-    fn compileBinary(self: *Self) void {
+    fn compileBinary(self: *Self, _: bool) void {
         const operator_type = self.previous.token_type;
         var rule = parse_rules.get(operator_type);
         self.parsePrecedence(@intToEnum(Precedence, @enumToInt(rule.precedence) + 1));
@@ -286,13 +299,29 @@ const Parser = struct {
         }
     }
 
+    fn compileVariable(self: *Self, can_assign: bool) void {
+        const name_token = self.previous;
+        if (can_assign and self.match(.Equal)) {
+            self.compileExpression();
+            self.emitOp(.SetGlobal);
+        } else {
+            self.emitOp(.GetGlobal);
+        }
+        self.emitIdentifierConstant(name_token);
+    }
+
+    fn emitIdentifierConstant(self: *Self, token: Token) void {
+        var name = value_api.makeConstantString(token.lexeme);
+        self.chunk.pushConstant(Value.fromString(name));
+    }
+
     fn emitOp(self: *Self, op: bytecode.Op) void {
         self.chunk.push(op);
     }
 
     fn emitConstant(self: *Self, value: Value) void {
         self.chunk.push(.Constant);
-        self.chunk.pushConstant(value);
+        _ = self.chunk.pushConstant(value);
     }
 
     fn advance(self: *Self) void {

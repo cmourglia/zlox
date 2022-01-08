@@ -31,6 +31,11 @@ pub const Op = enum {
     GreaterEqual,
     Less,
     LessEqual,
+
+    DefineGlobal,
+    SetGlobal,
+    GetGlobal,
+
     Print, // FIXME: Temporary
     Pop,
 };

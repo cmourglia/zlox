@@ -8,5 +8,13 @@ print("HEY" + " " + "AU FAIT ! " + "." * 3 + " TEST " + "!" * 42);
 print(1 + 2);
 print(3 + 4);
 
-// Test
 1 + 2;
+
+let a = 32;
+let b = 64;
+print(a + b);
+
+let foo = "Hello";
+let bar = "World";
+bar = "AHAH";
+print(foo + " " + bar);
