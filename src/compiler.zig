@@ -9,7 +9,9 @@ const InterpreterError = @import("vm.zig").InterpreterError;
 const Scanner = @import("scanner.zig").Scanner;
 const Token = @import("scanner.zig").Token;
 const TokenType = @import("scanner.zig").TokenType;
-const Value = @import("value.zig").Value;
+
+const value_api = @import("value.zig");
+const Value = value_api.Value;
 
 const Precedence = enum(usize) {
     None,
@@ -227,9 +229,7 @@ const Parser = struct {
 
     fn compileString(self: *Self) void {
         const source_str = self.previous.lexeme;
-        const str = self.heap.makeString();
-
-        str.concat(.{source_str}) catch unreachable;
+        const str = value_api.makeConstantString(source_str);
 
         self.emitConstant(Value.fromString(str));
     }
