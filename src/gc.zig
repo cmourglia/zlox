@@ -26,7 +26,7 @@ pub const Heap = struct {
     used: std.ArrayList(bool),
 
     next_id: usize = 0,
-    free_ids: std.ArrayList(HeapId),
+    free_ids: std.AutoHashMap(HeapId, void),
 
     const garbage_on_each_alloc = true;
 
@@ -37,7 +37,7 @@ pub const Heap = struct {
             .allocator = allocator,
             .data = std.ArrayList(Data).init(allocator),
             .used = std.ArrayList(bool).init(allocator),
-            .free_ids = std.ArrayList(HeapId).init(allocator),
+            .free_ids = std.AutoHashMap(HeapId, void).init(allocator),
         };
     }
 
@@ -79,7 +79,7 @@ pub const Heap = struct {
         for (self.used.items) |used, id| {
             if (!used) {
                 self.destroy(&self.data.items[id]);
-                self.free_ids.append(id) catch unreachable;
+                self.free_ids.put(id, {}) catch unreachable;
             }
         }
 
@@ -128,11 +128,13 @@ pub const Heap = struct {
     fn acquireId(self: *Self) HeapId {
         var id = @as(HeapId, 0);
 
-        if (self.free_ids.items.len == 0) {
+        if (self.free_ids.count() == 0) {
             id = self.next_id;
             self.next_id += 1;
         } else {
-            id = self.free_ids.swapRemove(0);
+            var it = self.free_ids.keyIterator();
+            id = it.next().?.*;
+            _ = self.free_ids.remove(id);
         }
 
         return id;
