@@ -28,6 +28,8 @@ pub const Heap = struct {
     next_id: usize = 0,
     free_ids: std.AutoHashMap(HeapId, void),
 
+    string_pool: std.StringHashMap(*String),
+
     const garbage_on_each_alloc = true;
 
     const Self = @This();
@@ -38,6 +40,7 @@ pub const Heap = struct {
             .data = std.ArrayList(Data).init(allocator),
             .used = std.ArrayList(bool).init(allocator),
             .free_ids = std.AutoHashMap(HeapId, void).init(allocator),
+            .string_pool = std.StringHashMap(*String).init(allocator),
         };
     }
 
@@ -46,6 +49,7 @@ pub const Heap = struct {
         for (self.data.items) |*data| {
             self.destroy(data);
         }
+        self.string_pool.deinit();
         self.free_ids.deinit();
         self.used.deinit();
         self.data.deinit();
@@ -54,6 +58,7 @@ pub const Heap = struct {
     fn destroy(self: *Self, data: *Data) void {
         switch (data.*) {
             .string => |s| {
+                _ = self.string_pool.remove(s.str());
                 s.deinit();
                 self.allocator.destroy(s);
             },

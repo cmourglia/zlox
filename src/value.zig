@@ -114,6 +114,26 @@ pub const String = struct {
     }
 };
 
+/// Helper function that checks if a constant string
+/// has already been inserted in the heap string pool.
+/// If yes, just return the pointer, otherwise create it,
+/// copy its content and insert it in the pool before
+/// return the pointer.
+/// ⚠️ This should never be used for string that will be mutated ⚠️
+pub fn makeConstantString(str: []const u8) *String {
+    const existing_value = vm().heap.string_pool.get(str);
+
+    if (existing_value != null) {
+        return existing_value.?;
+    }
+
+    var string = vm().heap.makeString();
+    string.concat(.{str}) catch unreachable;
+    vm().heap.string_pool.put(string.str(), string) catch unreachable;
+
+    return string;
+}
+
 pub const Value = union(enum) {
     number: f64,
     boolean: bool,
