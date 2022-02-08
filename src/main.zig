@@ -42,7 +42,7 @@ pub fn main() !void {
 }
 
 fn runFile(alloc: std.mem.Allocator, vm: *VM, filename: []const u8) !void {
-    var f = try std.fs.cwd().openFile(filename, std.fs.File.OpenFlags{ .read = true });
+    var f = try std.fs.cwd().openFile(filename, std.fs.File.OpenFlags{});
     defer f.close();
 
     var buf = try f.readToEndAlloc(alloc, 1_000_000_000);
