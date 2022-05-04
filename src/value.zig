@@ -301,7 +301,7 @@ pub const Value = union(enum) {
             .number => {
                 const n1 = @field(lhs, "number");
                 const n2 = @field(rhs, "number");
-                return n1 == n2;
+                return n1 >= n2;
             },
             .string => {
                 const s1 = @field(lhs, "string");
@@ -325,7 +325,7 @@ pub const Value = union(enum) {
             .number => {
                 const n1 = @field(lhs, "number");
                 const n2 = @field(rhs, "number");
-                return n1 == n2;
+                return n1 < n2;
             },
             .string => {
                 const s1 = @field(lhs, "string");
@@ -349,7 +349,7 @@ pub const Value = union(enum) {
             .number => {
                 const n1 = @field(lhs, "number");
                 const n2 = @field(rhs, "number");
-                return n1 == n2;
+                return n1 <= n2;
             },
             .string => {
                 const s1 = @field(lhs, "string");
